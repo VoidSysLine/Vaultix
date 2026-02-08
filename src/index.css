@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* ============================================
+   Vaultix Design System - CSS Custom Properties
+   ============================================ */
+
+@layer base {
+  :root {
+    --color-primary-50: #f0f9ff;
+    --color-primary-100: #e0f2fe;
+    --color-primary-200: #bae6fd;
+    --color-primary-300: #7dd3fc;
+    --color-primary-400: #38bdf8;
+    --color-primary-500: #0ea5e9;
+    --color-primary-600: #0284c7;
+    --color-primary-700: #0369a1;
+    --color-primary-800: #075985;
+    --color-primary-900: #0c4a6e;
+    --color-primary-950: #082f49;
+
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    --color-security-weak: #ef4444;
+    --color-security-medium: #f59e0b;
+    --color-security-strong: #10b981;
+    --color-security-very-strong: #059669;
+
+    --color-background: 255 255 255;
+    --color-background-secondary: 249 250 251;
+    --color-background-tertiary: 243 244 246;
+    --color-foreground: 15 23 42;
+    --color-foreground-secondary: 71 85 105;
+    --color-foreground-muted: 148 163 184;
+    --color-border: 226 232 240;
+    --color-border-hover: 203 213 225;
+    --color-accent: 241 245 249;
+    --color-accent-foreground: 15 23 42;
+
+    --sidebar-width: 200px;
+    --entry-list-width: 400px;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --color-background: 15 23 42;
+    --color-background-secondary: 30 41 59;
+    --color-background-tertiary: 51 65 85;
+    --color-foreground: 241 245 249;
+    --color-foreground-secondary: 203 213 225;
+    --color-foreground-muted: 148 163 184;
+    --color-border: 51 65 85;
+    --color-border-hover: 71 85 105;
+    --color-accent: 30 41 59;
+    --color-accent-foreground: 241 245 249;
+  }
+}
+
+@theme {
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  --color-bg: rgb(var(--color-background));
+  --color-bg-secondary: rgb(var(--color-background-secondary));
+  --color-bg-tertiary: rgb(var(--color-background-tertiary));
+  --color-fg: rgb(var(--color-foreground));
+  --color-fg-secondary: rgb(var(--color-foreground-secondary));
+  --color-fg-muted: rgb(var(--color-foreground-muted));
+  --color-bd: rgb(var(--color-border));
+  --color-bd-hover: rgb(var(--color-border-hover));
+  --color-ac: rgb(var(--color-accent));
+  --color-ac-foreground: rgb(var(--color-accent-foreground));
+
+  --color-primary: var(--color-primary-500);
+  --color-primary-hover: var(--color-primary-600);
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--color-border));
+  }
+
+  body {
+    margin: 0;
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-foreground-muted) / 0.3);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-foreground-muted) / 0.5);
+  }
+}
