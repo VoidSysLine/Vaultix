@@ -12,7 +12,11 @@ const isDev = !app.isPackaged
 // ============================================
 
 function startPythonBackend() {
-  const pythonPath = isDev ? 'python3' : path.join(process.resourcesPath, 'python', 'python3')
+  const fs = require('fs')
+  const venvPython = path.join(__dirname, '..', '.venv', 'bin', 'python3')
+  const pythonPath = isDev
+    ? (fs.existsSync(venvPython) ? venvPython : 'python3')
+    : path.join(process.resourcesPath, 'python', 'python3')
   const backendPath = isDev
     ? path.join(__dirname, '..', 'backend')
     : path.join(process.resourcesPath, 'backend')
