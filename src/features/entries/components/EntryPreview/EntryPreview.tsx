@@ -1,11 +1,13 @@
 import {
   Globe, User, Key, Link, FileText, Tag, Clock,
-  Edit, Trash2, Copy, Paperclip
+  Edit, Trash2, Copy, Paperclip, Download
 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { ProtectedField } from '@/shared/components/ProtectedField'
 import { CopyableField } from '@/shared/components/CopyableField'
 import { useEntriesStore } from '@/features/entries/store/entriesStore'
+import { attachmentsApi } from '@/shared/utils/api'
+import { toast } from '@/shared/components/Toast'
 import type { KdbxEntry } from '@/shared/types/kdbx.types'
 
 function FieldSection({ label, icon: Icon, children }: {
@@ -24,7 +26,11 @@ function FieldSection({ label, icon: Icon, children }: {
   )
 }
 
-function EntryDetail({ entry }: { entry: KdbxEntry }) {
+function EntryDetail({ entry, onEdit, onDelete }: {
+  entry: KdbxEntry
+  onEdit?: (entry: KdbxEntry) => void
+  onDelete?: (entryId: string) => void
+}) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -48,10 +54,10 @@ function EntryDetail({ entry }: { entry: KdbxEntry }) {
           </div>
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit?.(entry)}>
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-error)]">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-error)]" onClick={() => onDelete?.(entry.id)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -113,13 +119,22 @@ function EntryDetail({ entry }: { entry: KdbxEntry }) {
             {entry.attachments.map((att) => (
               <button
                 key={att.id}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-[rgb(var(--color-accent))] transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-[rgb(var(--color-accent))] transition-colors group"
+                onClick={() => {
+                  const url = attachmentsApi.downloadUrl(entry.id, att.id)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = att.filename
+                  a.click()
+                  toast('info', `Lade "${att.filename}" herunter...`)
+                }}
               >
                 <FileText className="h-4 w-4 text-[rgb(var(--color-foreground-muted))]" />
                 <span className="flex-1 text-left truncate">{att.filename}</span>
                 <span className="text-xs text-[rgb(var(--color-foreground-muted))]">
                   {formatSize(att.size)}
                 </span>
+                <Download className="h-3.5 w-3.5 text-[rgb(var(--color-foreground-muted))] opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             ))}
           </div>
@@ -184,7 +199,12 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function EntryPreview() {
+interface EntryPreviewProps {
+  onEdit?: (entry: KdbxEntry) => void
+  onDelete?: (entryId: string) => void
+}
+
+export function EntryPreview({ onEdit, onDelete }: EntryPreviewProps) {
   const entries = useEntriesStore((s) => s.entries)
   const selectedId = useEntriesStore((s) => s.selectedId)
   const selectedEntry = entries.find((e) => e.id === selectedId)
@@ -201,7 +221,7 @@ export function EntryPreview() {
 
   return (
     <div className="h-full overflow-y-auto p-6">
-      <EntryDetail entry={selectedEntry} />
+      <EntryDetail entry={selectedEntry} onEdit={onEdit} onDelete={onDelete} />
     </div>
   )
 }
