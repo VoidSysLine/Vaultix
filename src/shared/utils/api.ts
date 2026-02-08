@@ -143,6 +143,18 @@ export const generatorApi = {
 }
 
 // ============================================
+// Attachments API
+// ============================================
+
+export const attachmentsApi = {
+  list: (entryId: string) =>
+    request<{ id: string; filename: string; size: number }[]>(`/api/attachments/${entryId}`),
+
+  downloadUrl: (entryId: string, attachmentId: string) =>
+    `${_baseUrl}/api/attachments/${entryId}/${attachmentId}`,
+}
+
+// ============================================
 // Health Check
 // ============================================
 

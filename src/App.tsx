@@ -13,11 +13,14 @@ import { SecurityAudit } from '@/features/audit/components/SecurityAudit'
 import { ImportExportDialog } from '@/features/import-export/components/ImportExportDialog'
 import { GroupDialog } from '@/features/groups/components/GroupDialog'
 import { ConfirmDialog } from '@/features/database/components/ConfirmDialog'
+import { AboutDialog } from '@/features/database/components/AboutDialog'
+import { ToastContainer, toast } from '@/shared/components/Toast'
 import { useSettingsStore } from '@/features/settings/store/settingsStore'
 import { useGroupsStore } from '@/features/groups/store/groupsStore'
 import { useEntriesStore } from '@/features/entries/store/entriesStore'
 import { useDatabaseStore } from '@/features/database/store/databaseStore'
 import { useAutoLock } from '@/shared/hooks/useAutoLock'
+import { useAutoSave } from '@/shared/hooks/useAutoSave'
 import { initApi, entriesApi, groupsApi, databaseApi, waitForBackend } from '@/shared/utils/api'
 import { cn } from '@/shared/utils/cn'
 import { X, Loader2 } from 'lucide-react'
@@ -158,6 +161,10 @@ function App() {
   const [backendReady, setBackendReady] = useState(false)
   const [groupDialog, setGroupDialog] = useState<GroupDialogState | null>(null)
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<KdbxGroup | null>(null)
+  const [showAbout, setShowAbout] = useState(false)
+
+  // Auto-save
+  useAutoSave()
 
   // Initialize API and wait for backend
   useEffect(() => {
@@ -220,44 +227,55 @@ function App() {
 
   const handleSaveEntry = useCallback(
     async (data: EntryFormData) => {
-      const selectedGroupId = useGroupsStore.getState().selectedGroupId
-      const groupId = selectedGroupId && !selectedGroupId.startsWith('__') ? selectedGroupId : ''
+      try {
+        const selectedGroupId = useGroupsStore.getState().selectedGroupId
+        const groupId = selectedGroupId && !selectedGroupId.startsWith('__') ? selectedGroupId : ''
 
-      if (editingEntry === null) {
-        await entriesApi.create({
-          title: data.title,
-          username: data.username,
-          password: data.password,
-          url: data.url,
-          notes: data.notes,
-          group_id: groupId,
-          tags: data.tags,
-          custom_fields: Object.fromEntries(data.customFields.map((f) => [f.name, f.value])),
-        })
-      } else if (editingEntry) {
-        await entriesApi.update(editingEntry.id, {
-          title: data.title,
-          username: data.username,
-          password: data.password,
-          url: data.url,
-          notes: data.notes,
-          tags: data.tags,
-          custom_fields: Object.fromEntries(data.customFields.map((f) => [f.name, f.value])),
-        })
+        if (editingEntry === null) {
+          await entriesApi.create({
+            title: data.title,
+            username: data.username,
+            password: data.password,
+            url: data.url,
+            notes: data.notes,
+            group_id: groupId,
+            tags: data.tags,
+            custom_fields: Object.fromEntries(data.customFields.map((f) => [f.name, f.value])),
+          })
+          toast('success', `"${data.title}" erstellt`)
+        } else if (editingEntry) {
+          await entriesApi.update(editingEntry.id, {
+            title: data.title,
+            username: data.username,
+            password: data.password,
+            url: data.url,
+            notes: data.notes,
+            tags: data.tags,
+            custom_fields: Object.fromEntries(data.customFields.map((f) => [f.name, f.value])),
+          })
+          toast('success', `"${data.title}" gespeichert`)
+        }
+
+        await loadFromBackend()
+        useDatabaseStore.getState().setLastSaved(new Date())
+        setEditingEntry(undefined)
+      } catch (err: unknown) {
+        toast('error', err instanceof Error ? err.message : 'Fehler beim Speichern')
       }
-
-      await loadFromBackend()
-      useDatabaseStore.getState().setLastSaved(new Date())
-      setEditingEntry(undefined)
     },
     [editingEntry]
   )
 
   const handleDeleteEntry = useCallback(async (entryId: string) => {
-    await entriesApi.delete(entryId)
-    await loadFromBackend()
-    useEntriesStore.getState().selectEntry(null)
-    useDatabaseStore.getState().setLastSaved(new Date())
+    try {
+      await entriesApi.delete(entryId)
+      await loadFromBackend()
+      useEntriesStore.getState().selectEntry(null)
+      useDatabaseStore.getState().setLastSaved(new Date())
+      toast('success', 'Eintrag gelöscht')
+    } catch (err: unknown) {
+      toast('error', err instanceof Error ? err.message : 'Fehler beim Löschen')
+    }
   }, [])
 
   // Group management
@@ -279,8 +297,9 @@ function App() {
       await groupsApi.delete(deleteGroupConfirm.id)
       await loadFromBackend()
       useGroupsStore.getState().selectGroup(null)
-    } catch {
-      // TODO: show error toast
+      toast('success', `Gruppe "${deleteGroupConfirm.name}" gelöscht`)
+    } catch (err: unknown) {
+      toast('error', err instanceof Error ? err.message : 'Fehler beim Löschen')
     }
     setDeleteGroupConfirm(null)
   }, [deleteGroupConfirm])
@@ -442,6 +461,10 @@ function App() {
           onCancel={() => setDeleteGroupConfirm(null)}
         />
       )}
+
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+
+      <ToastContainer />
     </div>
   )
 }

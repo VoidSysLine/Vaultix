@@ -1,11 +1,13 @@
 import {
   Globe, User, Key, Link, FileText, Tag, Clock,
-  Edit, Trash2, Copy, Paperclip
+  Edit, Trash2, Copy, Paperclip, Download
 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { ProtectedField } from '@/shared/components/ProtectedField'
 import { CopyableField } from '@/shared/components/CopyableField'
 import { useEntriesStore } from '@/features/entries/store/entriesStore'
+import { attachmentsApi } from '@/shared/utils/api'
+import { toast } from '@/shared/components/Toast'
 import type { KdbxEntry } from '@/shared/types/kdbx.types'
 
 function FieldSection({ label, icon: Icon, children }: {
@@ -117,13 +119,22 @@ function EntryDetail({ entry, onEdit, onDelete }: {
             {entry.attachments.map((att) => (
               <button
                 key={att.id}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-[rgb(var(--color-accent))] transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-[rgb(var(--color-accent))] transition-colors group"
+                onClick={() => {
+                  const url = attachmentsApi.downloadUrl(entry.id, att.id)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = att.filename
+                  a.click()
+                  toast('info', `Lade "${att.filename}" herunter...`)
+                }}
               >
                 <FileText className="h-4 w-4 text-[rgb(var(--color-foreground-muted))]" />
                 <span className="flex-1 text-left truncate">{att.filename}</span>
                 <span className="text-xs text-[rgb(var(--color-foreground-muted))]">
                   {formatSize(att.size)}
                 </span>
+                <Download className="h-3.5 w-3.5 text-[rgb(var(--color-foreground-muted))] opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             ))}
           </div>

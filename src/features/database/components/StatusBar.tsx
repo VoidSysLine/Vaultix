@@ -4,6 +4,7 @@ import { useEntriesStore } from '@/features/entries/store/entriesStore'
 import { Button } from '@/shared/ui/button'
 import { useHotkeys } from '@/shared/hooks/useHotkeys'
 import { databaseApi } from '@/shared/utils/api'
+import { toast } from '@/shared/components/Toast'
 
 function formatRelativeTime(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -27,8 +28,9 @@ export function StatusBar({ onLock }: StatusBarProps) {
     try {
       await databaseApi.save()
       useDatabaseStore.getState().setLastSaved(new Date())
-    } catch {
-      // TODO: show error toast
+      toast('success', 'Datenbank gespeichert')
+    } catch (err: unknown) {
+      toast('error', err instanceof Error ? err.message : 'Speichern fehlgeschlagen')
     }
   }
 
