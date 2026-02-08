@@ -1,9 +1,17 @@
-import { Shield, Settings, Lock, Moon, Sun } from 'lucide-react'
+import { Shield, Settings, Lock, Moon, Sun, ShieldCheck, Upload, Wand2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { SearchBar } from '@/features/search/components/SearchBar'
 import { useSettingsStore } from '@/features/settings/store/settingsStore'
 
-export function Header() {
+interface HeaderProps {
+  onOpenSettings?: () => void
+  onLock?: () => void
+  onOpenAudit?: () => void
+  onOpenImportExport?: () => void
+  onOpenGenerator?: () => void
+}
+
+export function Header({ onOpenSettings, onLock, onOpenAudit, onOpenImportExport, onOpenGenerator }: HeaderProps) {
   const theme = useSettingsStore((s) => s.theme)
   const setTheme = useSettingsStore((s) => s.setTheme)
 
@@ -28,19 +36,38 @@ export function Header() {
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
+        {onOpenGenerator && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenGenerator} title="Generator (Ctrl+G)">
+            <Wand2 className="h-4 w-4" />
+          </Button>
+        )}
+        {onOpenAudit && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenAudit} title="Sicherheits-Audit">
+            <ShieldCheck className="h-4 w-4" />
+          </Button>
+        )}
+        {onOpenImportExport && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenImportExport} title="Import/Export">
+            <Upload className="h-4 w-4" />
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme} title="Farbschema wechseln">
           {theme === 'dark' ? (
             <Moon className="h-4 w-4" />
           ) : (
             <Sun className="h-4 w-4" />
           )}
         </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Settings className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Lock className="h-4 w-4" />
-        </Button>
+        {onOpenSettings && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenSettings} title="Einstellungen (Ctrl+,)">
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
+        {onLock && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onLock} title="Sperren (Ctrl+L)">
+            <Lock className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </header>
   )

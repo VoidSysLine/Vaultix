@@ -1,14 +1,22 @@
-import { ChevronRight, Folder, FolderOpen, Star, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { ChevronRight, Folder, FolderOpen, Star, Trash2, Plus, Pencil, Trash, FolderPlus } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { useGroupsStore } from '@/features/groups/store/groupsStore'
 import type { KdbxGroup } from '@/shared/types/kdbx.types'
 
+interface ContextMenuState {
+  x: number
+  y: number
+  group: KdbxGroup
+}
+
 interface GroupNodeProps {
   group: KdbxGroup
   depth: number
+  onContextMenu: (e: React.MouseEvent, group: KdbxGroup) => void
 }
 
-function GroupNode({ group, depth }: GroupNodeProps) {
+function GroupNode({ group, depth, onContextMenu }: GroupNodeProps) {
   const selectedGroupId = useGroupsStore((s) => s.selectedGroupId)
   const expandedGroupIds = useGroupsStore((s) => s.expandedGroupIds)
   const selectGroup = useGroupsStore((s) => s.selectGroup)
@@ -28,6 +36,7 @@ function GroupNode({ group, depth }: GroupNodeProps) {
         )}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={() => selectGroup(group.id)}
+        onContextMenu={(e) => onContextMenu(e, group)}
       >
         {hasChildren ? (
           <ChevronRight
@@ -58,7 +67,7 @@ function GroupNode({ group, depth }: GroupNodeProps) {
       {isExpanded && hasChildren && (
         <div>
           {group.children.map((child) => (
-            <GroupNode key={child.id} group={child} depth={depth + 1} />
+            <GroupNode key={child.id} group={child} depth={depth + 1} onContextMenu={onContextMenu} />
           ))}
         </div>
       )}
@@ -66,21 +75,95 @@ function GroupNode({ group, depth }: GroupNodeProps) {
   )
 }
 
-export function GroupTree() {
+function ContextMenu({ x, y, group, onCreateSubgroup, onRename, onDelete, onClose }: {
+  x: number
+  y: number
+  group: KdbxGroup
+  onCreateSubgroup: (group: KdbxGroup) => void
+  onRename: (group: KdbxGroup) => void
+  onDelete: (group: KdbxGroup) => void
+  onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-50 bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] rounded-lg shadow-lg py-1 min-w-[160px]"
+      style={{ left: x, top: y }}
+    >
+      <button
+        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-[rgb(var(--color-accent))] transition-colors"
+        onClick={() => { onCreateSubgroup(group); onClose() }}
+      >
+        <FolderPlus className="h-3.5 w-3.5" />
+        Untergruppe erstellen
+      </button>
+      <button
+        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-[rgb(var(--color-accent))] transition-colors"
+        onClick={() => { onRename(group); onClose() }}
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Umbenennen
+      </button>
+      <div className="border-t border-[rgb(var(--color-border))] my-1" />
+      <button
+        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+        onClick={() => { onDelete(group); onClose() }}
+      >
+        <Trash className="h-3.5 w-3.5" />
+        Löschen
+      </button>
+    </div>
+  )
+}
+
+interface GroupTreeProps {
+  onCreateGroup?: (parentId?: string) => void
+  onRenameGroup?: (group: KdbxGroup) => void
+  onDeleteGroup?: (group: KdbxGroup) => void
+}
+
+export function GroupTree({ onCreateGroup, onRenameGroup, onDeleteGroup }: GroupTreeProps) {
   const groups = useGroupsStore((s) => s.groups)
   const selectGroup = useGroupsStore((s) => s.selectGroup)
   const selectedGroupId = useGroupsStore((s) => s.selectedGroupId)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+
+  const handleContextMenu = (e: React.MouseEvent, group: KdbxGroup) => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY, group })
+  }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-3 py-2">
+      <div className="px-3 py-2 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-foreground-muted))]">
           Gruppen
         </h2>
+        {onCreateGroup && (
+          <button
+            className="h-5 w-5 flex items-center justify-center rounded hover:bg-[rgb(var(--color-accent))] transition-colors"
+            onClick={() => onCreateGroup()}
+            title="Neue Gruppe"
+          >
+            <Plus className="h-3.5 w-3.5 text-[rgb(var(--color-foreground-muted))]" />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto px-1">
         {groups.map((group) => (
-          <GroupNode key={group.id} group={group} depth={0} />
+          <GroupNode key={group.id} group={group} depth={0} onContextMenu={handleContextMenu} />
         ))}
       </div>
 
@@ -108,6 +191,18 @@ export function GroupTree() {
           <span>Papierkorb</span>
         </button>
       </div>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          group={contextMenu.group}
+          onCreateSubgroup={(g) => onCreateGroup?.(g.id)}
+          onRename={(g) => onRenameGroup?.(g)}
+          onDelete={(g) => onDeleteGroup?.(g)}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   )
 }

@@ -24,7 +24,11 @@ function FieldSection({ label, icon: Icon, children }: {
   )
 }
 
-function EntryDetail({ entry }: { entry: KdbxEntry }) {
+function EntryDetail({ entry, onEdit, onDelete }: {
+  entry: KdbxEntry
+  onEdit?: (entry: KdbxEntry) => void
+  onDelete?: (entryId: string) => void
+}) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -48,10 +52,10 @@ function EntryDetail({ entry }: { entry: KdbxEntry }) {
           </div>
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit?.(entry)}>
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-error)]">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-error)]" onClick={() => onDelete?.(entry.id)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -184,7 +188,12 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function EntryPreview() {
+interface EntryPreviewProps {
+  onEdit?: (entry: KdbxEntry) => void
+  onDelete?: (entryId: string) => void
+}
+
+export function EntryPreview({ onEdit, onDelete }: EntryPreviewProps) {
   const entries = useEntriesStore((s) => s.entries)
   const selectedId = useEntriesStore((s) => s.selectedId)
   const selectedEntry = entries.find((e) => e.id === selectedId)
@@ -201,7 +210,7 @@ export function EntryPreview() {
 
   return (
     <div className="h-full overflow-y-auto p-6">
-      <EntryDetail entry={selectedEntry} />
+      <EntryDetail entry={selectedEntry} onEdit={onEdit} onDelete={onDelete} />
     </div>
   )
 }

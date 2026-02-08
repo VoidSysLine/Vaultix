@@ -1,9 +1,9 @@
-import { Circle, Database, Clock, Save } from 'lucide-react'
+import { Circle, Database, Clock, Save, Lock } from 'lucide-react'
 import { useDatabaseStore } from '@/features/database/store/databaseStore'
 import { useEntriesStore } from '@/features/entries/store/entriesStore'
 import { Button } from '@/shared/ui/button'
 import { useHotkeys } from '@/shared/hooks/useHotkeys'
-import { cn } from '@/shared/utils/cn'
+import { databaseApi } from '@/shared/utils/api'
 
 function formatRelativeTime(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -13,15 +13,26 @@ function formatRelativeTime(date: Date): string {
   return date.toLocaleDateString('de-DE')
 }
 
-export function StatusBar() {
+interface StatusBarProps {
+  onLock?: () => void
+}
+
+export function StatusBar({ onLock }: StatusBarProps) {
   const isDirty = useDatabaseStore((s) => s.isDirty)
   const lastSaved = useDatabaseStore((s) => s.lastSaved)
   const database = useDatabaseStore((s) => s.database)
   const entries = useEntriesStore((s) => s.entries)
 
-  useHotkeys('ctrl+s', () => {
-    // TODO: trigger save
-  })
+  const handleSave = async () => {
+    try {
+      await databaseApi.save()
+      useDatabaseStore.getState().setLastSaved(new Date())
+    } catch {
+      // TODO: show error toast
+    }
+  }
+
+  useHotkeys('ctrl+s', handleSave)
 
   return (
     <div className="h-8 bg-[rgb(var(--color-background-secondary))] border-t border-[rgb(var(--color-border))] flex items-center justify-between px-4 text-xs text-[rgb(var(--color-foreground-muted))] select-none">
@@ -44,9 +55,9 @@ export function StatusBar() {
         <div className="flex items-center gap-1.5">
           {isDirty ? (
             <>
-              <Circle className={cn('h-2.5 w-2.5 fill-[var(--color-warning)] text-[var(--color-warning)]')} />
+              <Circle className="h-2.5 w-2.5 fill-[var(--color-warning)] text-[var(--color-warning)]" />
               <span className="text-[var(--color-warning)]">Geändert</span>
-              <Button variant="ghost" size="sm" className="h-5 px-1.5 text-xs ml-1">
+              <Button variant="ghost" size="sm" className="h-5 px-1.5 text-xs ml-1" onClick={handleSave}>
                 <Save className="h-3 w-3 mr-1" />
                 Speichern
               </Button>
@@ -58,6 +69,12 @@ export function StatusBar() {
             </>
           )}
         </div>
+        {onLock && (
+          <Button variant="ghost" size="sm" className="h-5 px-1.5 text-xs" onClick={onLock}>
+            <Lock className="h-3 w-3 mr-1" />
+            Sperren
+          </Button>
+        )}
       </div>
     </div>
   )
